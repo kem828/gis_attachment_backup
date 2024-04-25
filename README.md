@@ -54,8 +54,11 @@ fs_list = [{'itemid' : 'itemidstring!',
 
 
 save_path = 'C:/PATH/TO/FOLDER'
+
 gdb_name = 'LOCAL_GDB_NAME.gdb'
+
 add_date_to_path = True
+
 
 
 configration vars are documented in script
