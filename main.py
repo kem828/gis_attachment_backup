@@ -36,6 +36,8 @@ def generate_gis_object(username = '', password = '', portal = 'https://www.arcg
             print('Failed to login to portal, please enter Username and Password')
             username = input('Username:')
             password = getpass.getpass('Password:')
+        else:
+            pass
     return gis
 
     
