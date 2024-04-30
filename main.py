@@ -13,7 +13,8 @@ import pathlib
 from datetime import date
 import asyncio
 import requests
-
+import pandas as pd
+import getpass
 
 
 def generate_gis_object(username = '', password = '', portal = 'https://www.arcgis.com', manual_retry = True):
@@ -157,6 +158,7 @@ fs_list = [{'itemid' : '017b7a572ff94943b867ace0cba0950e',
 save_path = 'C:/Test/cleanstat_backup'
 gdb_name = 'cleanstat.gdb'
 add_date_to_path = True
+output_excel_name = 'attachments.xlsx'
 
 
 #As far as I can tell, this is the method to change the over write environment var for arcgis api for python
@@ -175,6 +177,7 @@ if add_date_to_path is True:
 
 
 for out_layer in fs_list:
+    attachment_list = []
     oid_list = []
     failed_oid_list = []
     layer = get_layer(itemid = out_layer['itemid'], 
@@ -195,6 +198,10 @@ for out_layer in fs_list:
     attachments = am.search(object_ids = oid_list, return_url = True) 
         
     for attachment in attachments:
+        attachment_list.append(attachment)
         fetch_and_save_attachment(attachment, save_path)
+    
+    df_out = pd.DataFrame(attachment_list)
+    df_out.to_excel(f'{save_path}/{output_excel_name}')
         
         
