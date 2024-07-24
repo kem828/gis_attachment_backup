@@ -178,7 +178,7 @@ if add_date_to_path is True:
 
 
 for out_layer in fs_list:
-    save_path = f'{save_path}/{out_layer['itemid']}'
+    save_path +=f"/{out_layer['itemid']}"
     attachment_list = []
     oid_list = []
     failed_oid_list = []
@@ -205,6 +205,6 @@ for out_layer in fs_list:
     
     #Save an excel file with a list of all attachments and their oid
     df_out = pd.DataFrame(attachment_list)
-    df_out.to_excel(f'{save_path}/{out_layer['itemid']}{output_excel_name}')
+    df_out.to_excel(f"{save_path}/{out_layer['itemid']}{output_excel_name}")
         
         
