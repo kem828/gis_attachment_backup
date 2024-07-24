@@ -151,7 +151,7 @@ manual_retry = True
 #feature service information
 fs_list = [{'itemid' : '017b7a572ff94943b867ace0cba0950e',
             'layer_index' : 0,
-            'query_str' : "CreationDate >= date '2022-05-02' and CreationDate < date '2022-05-03'",
+            'query_str' : "1=1",
             'table' : False,
             'oid_field' : 'OBJECTID'}]
 
