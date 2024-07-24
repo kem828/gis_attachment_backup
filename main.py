@@ -11,7 +11,6 @@ from arcgis.features import FeatureLayerCollection
 import arcpy
 import pathlib
 from datetime import date
-import asyncio
 import requests
 import pandas as pd
 import getpass
