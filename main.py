@@ -203,7 +203,7 @@ for out_layer in fs_list:
     attachment_len = len(attachments)
     for progress, attachment in enumerate(attachments):
         if progress % 10 == 0 and log_status == True:
-            print(f'Outputting {progress} attachment of {attachment_len}')
+            print(f'Outputting attachment {progress} of {attachment_len}')
         attachment_list.append(attachment)
         fetch_and_save_attachment(attachment, save_path)
     
