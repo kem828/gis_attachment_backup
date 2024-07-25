@@ -221,7 +221,7 @@ for out_layer in fs_list:
     #Have considered rewriting as async or parallel operation. Could significantly increase speed even more
     for progress, attachment in enumerate(attachments):
         if progress % 10 == 0 and log_status == True:
-            print(f'Outputting attachment {progress} of {attachment_len}')
+            print(f'Outputting {name} attachment {progress} of {attachment_len}')
         attachment_list.append(attachment)
         fetch_and_save_attachment(attachment, save_path)
     
