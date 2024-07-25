@@ -144,7 +144,7 @@ Can easily be changed when that is the case
 ###BEGIN CONFIG
 
 #credentials
-username = 'keinan.marks'
+username = 'USERNAME'
 password = 'PASSWORD'
 portal = 'https://www.arcgis.com'
 manual_retry = True
@@ -161,6 +161,7 @@ save_path = 'C:/Test/facility_test'
 gdb_name = 'output.gdb'
 add_date_to_path = True
 output_excel_name = 'attachments.xlsx'
+log_status = True
 
 
 #As far as I can tell, this is the method to change the over write environment var for arcgis api for python
@@ -199,8 +200,10 @@ for out_layer in fs_list:
 
     am = features.managers.AttachmentManager(layer)
     attachments = am.search(object_ids = oid_list, return_url = True) 
-        
-    for attachment in attachments:
+    attachment_len = len(attachments)
+    for progress, attachment in enumerate(attachments):
+        if progress % 10 == 0 and log_status == True:
+            print(f'Outputting {progress} attachment of {attachment_len}')
         attachment_list.append(attachment)
         fetch_and_save_attachment(attachment, save_path)
     
