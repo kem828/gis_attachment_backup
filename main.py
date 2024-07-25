@@ -201,6 +201,10 @@ for out_layer in fs_list:
     am = features.managers.AttachmentManager(layer)
     attachments = am.search(object_ids = oid_list, return_url = True) 
     attachment_len = len(attachments)
+    
+    df_out = pd.DataFrame(attachment_list)
+    df_out.to_excel(f"{save_path}/{out_layer['itemid']}{output_excel_name}")
+    
     for progress, attachment in enumerate(attachments):
         if progress % 10 == 0 and log_status == True:
             print(f'Outputting attachment {progress} of {attachment_len}')
@@ -208,7 +212,6 @@ for out_layer in fs_list:
         fetch_and_save_attachment(attachment, save_path)
     
     #Save an excel file with a list of all attachments and their oid
-    df_out = pd.DataFrame(attachment_list)
-    df_out.to_excel(f"{save_path}/{out_layer['itemid']}{output_excel_name}")
+
         
         
