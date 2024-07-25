@@ -35,6 +35,7 @@ def generate_gis_object(username = '', password = '', portal = 'https://www.arcg
             print('Failed to login to portal, please enter Username and Password')
             username = input('Username:')
             password = getpass.getpass('Password:')
+            gis = GIS(url = portal, username = username, password = password)
         else:
             pass
     return gis
@@ -143,20 +144,20 @@ Can easily be changed when that is the case
 ###BEGIN CONFIG
 
 #credentials
-username = 'USERNAME'
+username = 'keinan.marks'
 password = 'PASSWORD'
 portal = 'https://www.arcgis.com'
 manual_retry = True
 
 #feature service information
-fs_list = [{'itemid' : '017b7a572ff94943b867ace0cba0950e',
+fs_list = [{'itemid' : '7d1b813995a94990b592f8df242716ee',
             'layer_index' : 0,
             'query_str' : "1=1",
             'table' : False,
             'oid_field' : 'OBJECTID'}]
 
 #output information (currently just paths, would need to add module for other save methods)
-save_path = 'C:/PATH/TO/OUTPUT'
+save_path = 'C:/Test/facility_test'
 gdb_name = 'output.gdb'
 add_date_to_path = True
 output_excel_name = 'attachments.xlsx'
