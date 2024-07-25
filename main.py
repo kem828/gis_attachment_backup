@@ -212,8 +212,7 @@ for out_layer in fs_list:
     
     
     #output list of attachments to xlsx file
-    df_out = pd.DataFrame(attachment_list)
-    df_out.to_excel(f"{save_path}/{out_layer['itemid']}{output_excel_name}")
+
     
     
     #Iterate through and output attachments using requests 
@@ -224,7 +223,10 @@ for out_layer in fs_list:
             print(f'Outputting {name} attachment {progress} of {attachment_len}')
         attachment_list.append(attachment)
         fetch_and_save_attachment(attachment, save_path)
+    print(f'{name} Export Complete')
     
+    df_out = pd.DataFrame(attachment_list)
+    df_out.to_excel(f"{save_path}/{out_layer['itemid']}{output_excel_name}")
     #Save an excel file with a list of all attachments and their oid
 
         
