@@ -171,40 +171,54 @@ arcpy.env.overwriteOutput = True
 ###END CONFIG
 ##
 
+
+#Connect to relevant GIS
 gis = generate_gis_object(username = username, password = password, portal = portal, manual_retry = manual_retry)
 
+#Add the date to the output folder location if enabled
 if add_date_to_path is True:
     today = date.today()
     save_path += f"/{today.strftime('%m_%d_%Y')}"
 
 
-
+#Iterate through list of items provided
 for out_layer in fs_list:
     save_path +=f"/{out_layer['itemid']}"
     attachment_list = []
     oid_list = []
     failed_oid_list = []
+    #Get the layer in question based on configuration (table, index, etc)
     layer = get_layer(itemid = out_layer['itemid'], 
                              gis = gis,
                              layer_index = out_layer['layer_index'], 
                              table = out_layer['table'])
     
-    
+    #Query the feature based on provided query string
     fs = layer.query(where=out_layer['query_str'])
+    #Inherit name of layer (for output fc)
     name = layer.properties['name']
-
+    
+    #Generate list of OIDs
     for feature in fs:
         oid_list.append(feature.attributes[out_layer['oid_field']])
-    
+    #Save layer\table to output gdb location
     backup_feature_layer(save_path, fs, gdb_name, name)
 
+    #Create attachment manager object to interact with layer attachments
     am = features.managers.AttachmentManager(layer)
+    #Generate a list of attachments for queried features
     attachments = am.search(object_ids = oid_list, return_url = True) 
     attachment_len = len(attachments)
     
+    
+    #output list of attachments to xlsx file
     df_out = pd.DataFrame(attachment_list)
     df_out.to_excel(f"{save_path}/{out_layer['itemid']}{output_excel_name}")
     
+    
+    #Iterate through and output attachments using requests 
+    #(attachment manager download method is VERY SLOW ~10-20 seconds per attachment regardless of size)
+    #Have considered rewriting as async or parallel operation. Could significantly increase speed even more
     for progress, attachment in enumerate(attachments):
         if progress % 10 == 0 and log_status == True:
             print(f'Outputting attachment {progress} of {attachment_len}')
