@@ -14,7 +14,7 @@ from datetime import date
 import requests
 import pandas as pd
 import getpass
-
+from multiprocessing import Pool
 
 def generate_gis_object(username = '', password = '', portal = 'https://www.arcgis.com', manual_retry = True):
     """ Get GIS Object from portal
@@ -73,7 +73,7 @@ def get_layer(itemid, gis, layer_index = 0, table = False):
     return layer
 
 
-def fetch_and_save_attachment(attachment, save_path):
+def fetch_and_save_attachment(attachment, save_path = '/'):
     """ gets information from attachment manager and saves file to relevant path
     
     Args:
@@ -81,6 +81,10 @@ def fetch_and_save_attachment(attachment, save_path):
         save_path (str): base backup folder to save image
         
         """
+    try:
+        save_path = attachment['save']
+    except:
+        pass
     record_id = attachment['PARENTOBJECTID']
     attachment_id = attachment['ID']
     name = attachment['NAME']
@@ -111,6 +115,7 @@ def backup_feature_layer(save_path, fs, gdb_name, name):
         arcpy.management.CreateFileGDB(save_path, gdb_name)
         fs.save(rf'{save_path}/{gdb_name}',name)
 
+
 '''
 Configuration below
 Presumably this is to be stored in an external config file
@@ -140,94 +145,103 @@ Can easily be changed when that is the case
         add_date_to_path (bool): save everything in a subset of the save+path using todays date
         arcpy.env.overwriteOutput (bool): do you want to overwrite if it exists? no actual error handling if it is no....
 '''
-##
-###BEGIN CONFIG
-
-#credentials
-username = 'USERNAME'
-password = 'PASSWORD'
-portal = 'https://www.arcgis.com'
-manual_retry = True
-
-#feature service information
-fs_list = [{'itemid' : '7d1b813995a94990b592f8df242716ee',
-            'layer_index' : 0,
-            'query_str' : "1=1",
-            'table' : False,
-            'oid_field' : 'OBJECTID'}]
-
-#output information (currently just paths, would need to add module for other save methods)
-save_path = 'C:/Test/facility_test'
-gdb_name = 'output.gdb'
-add_date_to_path = True
-output_excel_name = 'attachments.xlsx'
-log_status = True
-
-
-#As far as I can tell, this is the method to change the over write environment var for arcgis api for python
-#Which means it is inaccessible when arcpy is not licensed?!
-#Seems like an oversight unless there is a separate environment\method Im missing
-arcpy.env.overwriteOutput = True
-###END CONFIG
-##
-
-
-#Connect to relevant GIS
-gis = generate_gis_object(username = username, password = password, portal = portal, manual_retry = manual_retry)
-
-#Add the date to the output folder location if enabled
-if add_date_to_path is True:
-    today = date.today()
-    save_path += f"/{today.strftime('%m_%d_%Y')}"
-
-
-#Iterate through list of items provided
-for out_layer in fs_list:
-    save_path +=f"/{out_layer['itemid']}"
-    attachment_list = []
-    oid_list = []
-    failed_oid_list = []
-    #Get the layer in question based on configuration (table, index, etc)
-    layer = get_layer(itemid = out_layer['itemid'], 
-                             gis = gis,
-                             layer_index = out_layer['layer_index'], 
-                             table = out_layer['table'])
+if __name__ == '__main__':
+    ##
+    ###BEGIN CONFIG
     
-    #Query the feature based on provided query string
-    fs = layer.query(where=out_layer['query_str'])
-    #Inherit name of layer (for output fc)
-    name = layer.properties['name']
+    #credentials
+    username = 'USERNAME'
+    password = 'PASSWORD'
+    portal = 'https://www.arcgis.com'
+    manual_retry = True
     
-    #Generate list of OIDs
-    for feature in fs:
-        oid_list.append(feature.attributes[out_layer['oid_field']])
-    #Save layer\table to output gdb location
-    backup_feature_layer(save_path, fs, gdb_name, name)
-
-    #Create attachment manager object to interact with layer attachments
-    am = features.managers.AttachmentManager(layer)
-    #Generate a list of attachments for queried features
-    attachments = am.search(object_ids = oid_list, return_url = True) 
-    attachment_len = len(attachments)
+    #feature service information
+    fs_list = [{'itemid' : '7d1b813995a94990b592f8df242716ee',
+                'layer_index' : 0,
+                'query_str' : "1=1",
+                'table' : False,
+                'oid_field' : 'OBJECTID'}]
+    
+    #output information (currently just paths, would need to add module for other save methods)
+    save_path = 'C:/Test/facility_test'
+    gdb_name = 'output.gdb'
+    add_date_to_path = True
+    output_excel_name = 'attachments.xlsx'
+    log_status = True
+    
+    pool_downloads = True
+    cores = 4
+    #As far as I can tell, this is the method to change the over write environment var for arcgis api for python
+    #Which means it is inaccessible when arcpy is not licensed?!
+    #Seems like an oversight unless there is a separate environment\method Im missing
+    arcpy.env.overwriteOutput = True
+    ###END CONFIG
+    ##
     
     
-    #output list of attachments to xlsx file
-
+    #Connect to relevant GIS
+    gis = generate_gis_object(username = username, password = password, portal = portal, manual_retry = manual_retry)
+    
+    #Add the date to the output folder location if enabled
+    if add_date_to_path is True:
+        today = date.today()
+        save_path += f"/{today.strftime('%m_%d_%Y')}"
     
     
-    #Iterate through and output attachments using requests 
-    #(attachment manager download method is VERY SLOW ~10-20 seconds per attachment regardless of size)
-    #Have considered rewriting as async or parallel operation. Could significantly increase speed even more
-    for progress, attachment in enumerate(attachments):
-        if progress % 10 == 0 and log_status == True:
-            print(f'Outputting {name} attachment {progress} of {attachment_len}')
-        attachment_list.append(attachment)
-        fetch_and_save_attachment(attachment, save_path)
-    print(f'{name} Export Complete')
+    #Iterate through list of items provided
+    for out_layer in fs_list:
+        save_path +=f"/{out_layer['itemid']}"
+        attachment_list = []
+        oid_list = []
+        failed_oid_list = []
+        #Get the layer in question based on configuration (table, index, etc)
+        layer = get_layer(itemid = out_layer['itemid'], 
+                                 gis = gis,
+                                 layer_index = out_layer['layer_index'], 
+                                 table = out_layer['table'])
+        
+        #Query the feature based on provided query string
+        fs = layer.query(where=out_layer['query_str'])
+        #Inherit name of layer (for output fc)
+        name = layer.properties['name']
+        
+        #Generate list of OIDs
+        for feature in fs:
+            oid_list.append(feature.attributes[out_layer['oid_field']])
+        #Save layer\table to output gdb location
+        backup_feature_layer(save_path, fs, gdb_name, name)
     
-    df_out = pd.DataFrame(attachment_list)
-    df_out.to_excel(f"{save_path}/{out_layer['itemid']}{output_excel_name}")
-    #Save an excel file with a list of all attachments and their oid
+        #Create attachment manager object to interact with layer attachments
+        am = features.managers.AttachmentManager(layer)
+        #Generate a list of attachments for queried features
+        attachments = am.search(object_ids = oid_list, return_url = True) 
+        attachment_len = len(attachments)
+        
+        
+        #output list of attachments to xlsx file
+    
+        df_out = pd.DataFrame(attachments)
+        #df_out = pd.DataFrame(attachments)
+        df_out.to_excel(f"{save_path}/{out_layer['itemid']}{output_excel_name}")
+        #Save an excel file with a list of all attachments and their oid
+        
+        if pool_downloads == True:
+            for i, attachment in enumerate(attachments):
+                attachments[i]['save'] = save_path
+            with Pool(cores) as p:
+                p.map(fetch_and_save_attachment, attachments)
+            #pass
+        #Iterate through and output attachments using requests 
+        #(attachment manager download method is VERY SLOW ~10-20 seconds per attachment regardless of size)
+        #Have considered rewriting as async or parallel operation. Could significantly increase speed even more
+        else:
+            for progress, attachment in enumerate(attachments):
+                if progress % 10 == 0 and log_status == True:
+                    print(f'Outputting {name} attachment {progress} of {attachment_len}')
+                attachment_list.append(attachment)
+                fetch_and_save_attachment(attachment, save_path)
+        print(f'{name} Export Complete')
+    
 
         
         
