@@ -169,7 +169,11 @@ if __name__ == '__main__':
     output_excel_name = 'attachments.xlsx'
     log_status = True
     
-    pool_downloads = True
+    
+    #Multiprocessing Configuration
+    #Set to true to enable multiprocessing
+    pool_downloads = False
+    #Designate pool size
     cores = 4
     #As far as I can tell, this is the method to change the over write environment var for arcgis api for python
     #Which means it is inaccessible when arcpy is not licensed?!
