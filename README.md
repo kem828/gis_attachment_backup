@@ -33,12 +33,11 @@ This is the list of layers that will be exported
 Contains one or more objects as documented below as out_layer:
 
             out_layer (dict) : object in fs_list:
-            layer_index (int): the index of the layer you are querying. Might need to experiment to identify
+            layer_index (int): the index of the layer you are querying. Might need to experiment to identify. listed as sublayer
             the relevant layer, as service indexes are not 1:1 with layer indexes
             table (bool): whether or not the layer in question is a table. Different i/o options for tables (for no reason mostly!)
             query_str (str): optional sql query to pass to service to retrieve only a subset
             itemid (str): the portal item id of the hosted feature layer being retrieved
-            gis (GIS): esri portal connection object used for arcgis api for python
             oid_field (str): The field in the feature layer designated as the oid. case sensitive (not the alias!)
             attach_to_gdb (bool) : True -> attach all exported attachments as blob in the relevant gdb layer\table, False-> Don't
 
