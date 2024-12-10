@@ -185,7 +185,6 @@ if __name__ == '__main__':
     
     
     #Connect to relevant GIS
-    #Connect to relevant GIS
     gis = generate_gis_object(username = username, password = password, portal = portal, manual_retry = manual_retry, token_length = token_length)
     
     #Add the date to the output folder location if enabled
