@@ -234,7 +234,11 @@ if __name__ == '__main__':
         #Save an excel file with a list of all attachments and their oid
         
         if pool_downloads == True:
-            multi_process(attachments, cores)
+            for i, attachment in enumerate(attachments):
+                attachments[i]['save'] = save_path
+            with Pool(cores) as p:
+                p.map(fetch_and_save_attachment, attachments)
+            #pass
         #Iterate through and output attachments using requests 
         #(attachment manager download method is VERY SLOW ~10-20 seconds per attachment regardless of size)
         #Have considered rewriting as async or parallel operation. Could significantly increase speed even more
