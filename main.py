@@ -15,8 +15,9 @@ import requests
 import pandas as pd
 import getpass
 from multiprocessing import Pool
+save_path = save_outpath
 
-def generate_gis_object(username = '', password = '', portal = 'https://www.arcgis.com', manual_retry = True):
+def generate_gis_object(username = '', password = '', portal = 'https://www.arcgis.com', manual_retry = True, token_length = 20160):
     """ Get GIS Object from portal
     
     Args:
@@ -29,13 +30,13 @@ def generate_gis_object(username = '', password = '', portal = 'https://www.arcg
         gis (GIS object): esri portal connection object used for arcgis api for python
     """
     try:
-        gis = GIS(url = portal, username = username, password = password)
+        gis = GIS(url = portal, username = username, password = password, expiration = token_length)
     except:
         if manual_retry is True:
             print('Failed to login to portal, please enter Username and Password')
             username = input('Username:')
             password = getpass.getpass('Password:')
-            gis = GIS(url = portal, username = username, password = password)
+            gis = GIS(url = portal, username = username, password = password, expiration = token_length)
         else:
             pass
     return gis
@@ -184,12 +185,13 @@ if __name__ == '__main__':
     
     
     #Connect to relevant GIS
-    gis = generate_gis_object(username = username, password = password, portal = portal, manual_retry = manual_retry)
+    #Connect to relevant GIS
+    gis = generate_gis_object(username = username, password = password, portal = portal, manual_retry = manual_retry, token_length = token_length)
     
     #Add the date to the output folder location if enabled
     if add_date_to_path is True:
         today = date.today()
-        save_path += f"/{today.strftime('%m_%d_%Y')}"
+        save_path += f"/{gdb_name.rstrip('.gdb')}_{today.strftime('%m_%d_%Y')}"
     
     
     #Iterate through list of items provided
@@ -225,16 +227,15 @@ if __name__ == '__main__':
         #output list of attachments to xlsx file
     
         df_out = pd.DataFrame(attachments)
+        #Add Generated attachment path to df for excel export
+        #Note this is (currently) manually derived
+        df_out['Attachment Save Path'] =  f'{save_path}/' + df_out['PARENTOBJECTID'].astype(str) + '/' + df_out['ID'].astype(str) + '/' + df_out['NAME']
         #df_out = pd.DataFrame(attachments)
         df_out.to_excel(f"{save_path}/{out_layer['itemid']}{output_excel_name}")
         #Save an excel file with a list of all attachments and their oid
         
         if pool_downloads == True:
-            for i, attachment in enumerate(attachments):
-                attachments[i]['save'] = save_path
-            with Pool(cores) as p:
-                p.map(fetch_and_save_attachment, attachments)
-            #pass
+            multi_process(attachments, cores)
         #Iterate through and output attachments using requests 
         #(attachment manager download method is VERY SLOW ~10-20 seconds per attachment regardless of size)
         #Have considered rewriting as async or parallel operation. Could significantly increase speed even more
@@ -244,5 +245,24 @@ if __name__ == '__main__':
                     print(f'Outputting {name} attachment {progress} of {attachment_len}')
                 attachment_list.append(attachment)
                 fetch_and_save_attachment(attachment, save_path)
+                
+        #If configured, attach the files to the relevant gdb
+        #With datasets containing large numbers of attachments, this is...unwieldy
+        #Does not technically match data hierarchy as hosted on AGOL
+        #I can't really think of any benefit, unless the intent is to immediately republish as a service (in which case this should work well!)
+        if out_layer['attach_to_gdb'] == True:
+            print('Attaching exported files to records in gdb')
+            #Enable attachments for newly generated layer or table
+            arcpy.management.EnableAttachments(rf'{save_path}/{gdb_name}/{name}')
+            #Redump metadata to csv (because esri likes it better)
+            df_out.to_csv(f"{save_path}/{out_layer['itemid']}.csv")
+            #Attach files based on generated layer\table location, object id field from configuration, newly generated csv file, oid field from csv, file path field from csv
+            arcpy.management.AddAttachments(rf'{save_path}/{gdb_name}/{name}', 
+                                            f'{out_layer["oid_field"]}', 
+                                            f"{save_path}/{out_layer['itemid']}.csv",
+                                            'PARENTOBJECTID', 
+                                            'Attachment Save Path')
+            
+            print('gdb attachments complete')
         print(f'{name} Export Complete')
     
