@@ -195,6 +195,7 @@ if __name__ == '__main__':
     
     #Iterate through list of items provided
     for out_layer in fs_list:
+        failed_attachments = []
         save_path +=f"/{out_layer['itemid']}"
         attachment_list = []
         oid_list = []
@@ -234,20 +235,39 @@ if __name__ == '__main__':
         #Save an excel file with a list of all attachments and their oid
         
         if pool_downloads == True:
-            for i, attachment in enumerate(attachments):
-                attachments[i]['save'] = save_path
-            with Pool(cores) as p:
-                p.map(fetch_and_save_attachment, attachments)
-            #pass
+            multi_process(attachments, cores)
         #Iterate through and output attachments using requests 
         #(attachment manager download method is VERY SLOW ~10-20 seconds per attachment regardless of size)
         #Have considered rewriting as async or parallel operation. Could significantly increase speed even more
         else:
             for progress, attachment in enumerate(attachments):
+                retries = 0
                 if progress % 10 == 0 and log_status == True:
                     print(f'Outputting {name} attachment {progress} of {attachment_len}')
                 attachment_list.append(attachment)
-                fetch_and_save_attachment(attachment, save_path)
+                try:
+                    fetch_and_save_attachment(attachment, save_path)
+                
+                #Failed Download Handling
+                except:
+                    #Just wait 5 seconds in case you lost internet :)
+                    time.sleep(5)
+                    #Try 5 times, then add it to a list and move on
+                    while retries < 5:
+                        try:
+                            fetch_and_save_attachment(attachment, save_path)
+                            break
+                        except:
+                            time.sleep(1)
+                            print('Fail: ',attachment)
+                            retries += 1
+                    failed_attachments.append([attachment,save_path])
+                    
+        if len(failed_attachments)>0:
+            fail_df = pd.DataFrame(failed_attachments)
+            fail_df.to_excel(f"{save_path}/{out_layer['itemid']}_failed_attachments.xlsx")
+            for failed_output in failed_attachment:
+                fetch_and_save_attachment(failed_output[0], failed_output[1])
                 
         #If configured, attach the files to the relevant gdb
         #With datasets containing large numbers of attachments, this is...unwieldy
@@ -268,4 +288,3 @@ if __name__ == '__main__':
             
             print('gdb attachments complete')
         print(f'{name} Export Complete')
-    
